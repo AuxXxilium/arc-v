@@ -184,16 +184,16 @@ function getBuildroot() {
   local DEST_PATH="${2:-br}"
 
   if [ "${1}" = "latest" ]; then
-    TAG=$(curl -s "https://api.github.com/repos/AuxXxilium/arc-buildroot/releases" | jq -r ".[0].tag_name")
+    TAG=$(curl -s "https://api.github.com/repos/AuxXxilium/arc-v-buildroot/releases" | jq -r ".[0].tag_name")
   fi
   [ ! -d "${DEST_PATH}" ] && mkdir -p "${DEST_PATH}"
   rm -rf "${DEST_PATH}/bzImage-arc"
-  STATUS=$(curl -w "%{http_code}" -L "https://github.com/AuxXxilium/arc-buildroot/releases/download/${TAG}/bzImage" -o "${DEST_PATH}/bzImage-arc")
+  STATUS=$(curl -w "%{http_code}" -L "https://github.com/AuxXxilium/arc-v-buildroot/releases/download/${TAG}/bzImage" -o "${DEST_PATH}/bzImage-arc")
   echo "TAG=${TAG}; Status=${STATUS}"
   [ ${STATUS} -ne 200 ] && exit 1
 
   rm -rf "${DEST_PATH}/initrd-arc"
-  STATUS=$(curl -w "%{http_code}" -L "https://github.com/AuxXxilium/arc-buildroot/releases/download/${TAG}/rootfs.cpio.xz" -o "${DEST_PATH}/initrd-arc")
+  STATUS=$(curl -w "%{http_code}" -L "https://github.com/AuxXxilium/arc-v-buildroot/releases/download/${TAG}/rootfs.cpio.xz" -o "${DEST_PATH}/initrd-arc")
   echo "TAG=${TAG}; Status=${STATUS}"
   [ ${STATUS} -ne 200 ] && exit 1
 

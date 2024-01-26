@@ -16,7 +16,7 @@ getModules "files/p3/modules"
 getConfigs "files/p3/configs"
 getPatches "files/p3/patches"
 
-IMAGE_FILE="arc.img"
+IMAGE_FILE="arc-v.img"
 gzip -dc "files/grub.img.gz" >"${IMAGE_FILE}"
 fdisk -l "${IMAGE_FILE}"
 
@@ -61,5 +61,5 @@ rmdir "/tmp/p3"
 
 sudo losetup --detach ${LOOPX}
 
-qemu-img convert -O vmdk arc.img arc-dyn.vmdk
-qemu-img convert -O vmdk -o adapter_type=lsilogic arc.img -o subformat=monolithicFlat arc.vmdk
+qemu-img convert -O vmdk arc-v.img arc-v-dyn.vmdk
+qemu-img convert -O vmdk -o adapter_type=lsilogic arc-v.img -o subformat=monolithicFlat arc-v.vmdk
