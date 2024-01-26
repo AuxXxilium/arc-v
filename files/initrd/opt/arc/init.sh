@@ -170,22 +170,14 @@ done
 
 # Inform user
 echo
-echo -e "Call \033[1;34marc.sh\033[0m to configure loader"
+echo -e "Call \033[1;34marc.sh\033[0m to configure Arc-V"
 echo
 echo -e "User config is on \033[1;34m${USER_CONFIG_FILE}\033[0m"
 echo -e "Default SSH Root password is \033[1;34marc\033[0m"
 echo
 
-mkdir -p "${ADDONS_PATH}"
-mkdir -p "${LKM_PATH}"
-mkdir -p "${MODULES_PATH}"
-mkdir -p "${MODEL_CONFIG_PATH}"
-mkdir -p "${PATCH_PATH}"
-mkdir -p "${BACKUPDIR}"
-
-# Load arc
-updateAddons
-echo -e "\033[1;34mLoading Arc Loader Overlay...\033[0m"
+# Load Arc-V
+echo -e "\033[1;34mLoading Arc-V Overlay...\033[0m"
 sleep 2
 
 # Diskcheck
@@ -198,7 +190,7 @@ for D in $(lsblk -dpno NAME); do
   fi
 done
 
-# Check memory and load Arc
+# Check memory and load Arc-V
 RAM=$(free -m | grep -i mem | awk '{print$2}')
 if [ ${RAM} -le 3500 ]; then
   echo -e "\033[1;31mYou have less than 4GB of RAM, if errors occur in loader creation, please increase the amount of RAM.\033[0m\n"

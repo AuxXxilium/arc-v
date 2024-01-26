@@ -8,13 +8,7 @@ set -e
 sudo git clean -fdx
 sudo git pull
 
-# Get extractor, LKM, addons and Modules
-getExtractor "files/p3/extractor"
-getLKMs "files/p3/lkms"
-getAddons "files/p3/addons"
-getModules "files/p3/modules"
-getConfigs "files/p3/configs"
-getPatches "files/p3/patches"
+# Nothing to do here
 
 IMAGE_FILE="arc-v.img"
 gzip -dc "files/grub.img.gz" >"${IMAGE_FILE}"
