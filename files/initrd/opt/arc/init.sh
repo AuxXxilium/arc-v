@@ -61,7 +61,7 @@ initConfigKey "arc.version" "${ARC_VERSION}" "${USER_CONFIG_FILE}"
 initConfigKey "device" "{}" "${USER_CONFIG_FILE}"
 
 # Init Network
-ETHX=$(ls /sys/class/net/ | grep -v lo || true)
+ETHX=$(ls /sys/class/net/ | grep -v lo | grep -v docker || true)
 ETH=$(echo ${ETHX} | wc -w)
 # No network devices
 [ ${ETH} -le 0 ] && die "No NIC found! - Loader does not work without Network connection."
