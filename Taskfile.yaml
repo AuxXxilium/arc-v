@@ -3,15 +3,10 @@
 version: "3"
 
 tasks:
-  build-img-n:
+  build-img-v:
     cmds:
       - git pull
-      - ./img-gen-n.sh
-
-  build-img-s:
-    cmds:
-      - git pull
-      - ./img-gen-s.sh
+      - ./img-gen-v.sh
 
   compile-kpatch:
     dir: kpatch
