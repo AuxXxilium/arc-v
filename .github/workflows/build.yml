@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-name: Build Arc Image
+name: Build Arc Virtual Image
 
 on:
   workflow_dispatch:
@@ -31,14 +31,6 @@ on:
       prerelease:
         description: "pre release"
         default: false
-        type: boolean
-      next:
-        description: "next"
-        default: true
-        type: boolean
-      stable:
-        description: "stable"
-        default: true
         type: boolean
       clean:
         description: "clean"
@@ -86,33 +78,18 @@ jobs:
           . scripts/func.sh "${{ secrets.BUILD_TOKEN }}"
 
           echo "Get Dependencies"
-          getAddons "files/p3/addons"
-          getModules "files/p3/modules"
-          getConfigs "files/p3/configs"
-          getPatches "files/p3/patches"
-          getCustom "files/p3/custom"
-          getOffline "files/p3/configs"
-          getLKMs "files/p3/lkms"
           getTheme "files/p1/boot/grub"
-          getBuildrootx "brx" 
-          getBuildroots "brs"
+          getBuildrootv "brv" 
 
           # Export Dependencies Version to env
-          echo "ADDONTAG=${ADDONTAG}" >> $GITHUB_ENV
-          echo "MODULETAG=${MODULETAG}" >> $GITHUB_ENV
-          echo "CONFIGTAG=${CONFIGTAG}" >> $GITHUB_ENV
-          echo "PATCHTAG=${PATCHTAG}" >> $GITHUB_ENV
-          echo "CUSTOMTAG=${CUSTOMTAG}" >> $GITHUB_ENV
-          echo "LKMTAG=${LKMTAG}" >> $GITHUB_ENV
           echo "THEMETAG=${THEMETAG}" >> $GITHUB_ENV
-          echo "BRXTAG=${BRXTAG}" >> $GITHUB_ENV
-          echo "BRSTAG=${BRSTAG}" >> $GITHUB_ENV
+          echo "BRVTAG=${BRVTAG}" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_ENV
 
           echo "OK"
 
        # Build incremental
-      - name: Build Next Image
+      - name: Build Virtual Image
         if: ${{ inputs.next == true }}
         run: |
           . scripts/func.sh
@@ -120,7 +97,7 @@ jobs:
           # Modify Source File
           ARC_BUILD="`date +'%y%m%d'`"
           ARC_VERSION="${{ inputs.version }}"
-          ARC_BRANCH="next"
+          ARC_BRANCH="virtual"
           echo "${ARC_BUILD}" >files/p1/ARC-BUILD
           echo "${ARC_VERSION}" >files/p1/ARC-VERSION
           echo "${ARC_BRANCH}" >files/p1/ARC-BRANCH
@@ -142,11 +119,11 @@ jobs:
           sudo mount ${LOOPX}p1 "/tmp/p1"
           sudo mount ${LOOPX}p3 "/tmp/p3"
 
-          [ ! -f "brx/bzImage-arc" ] || [ ! -f "brx/initrd-arc" ] && return 1
+          [ ! -f "brv/bzImage-arc" ] || [ ! -f "brv/initrd-arc" ] && return 1
           
           echo "Repack initrd"
-          cp -f "brx/bzImage-arc" "files/p3/bzImage-arc"
-          repackInitrd "brx/initrd-arc" "files/initrd" "files/p3/initrd-arc"
+          cp -f "brv/bzImage-arc" "files/p3/bzImage-arc"
+          repackInitrd "brv/initrd-arc" "files/initrd" "files/p3/initrd-arc"
 
           echo "Copying files"
           sudo cp -rf "files/p1/"* "/tmp/p1"
@@ -161,85 +138,9 @@ jobs:
 
           sudo losetup --detach ${LOOPX}
 
-          echo "Image Converter"
-          qemu-img convert -p -f raw -O vmdk ${IMAGE_FILE} arc-dyn.vmdk
-          qemu-img convert -p -f raw -o subformat=monolithicFlat -O vmdk ${IMAGE_FILE} arc.vmdk
-
-          echo "Create Arc vhd"
-          createvmc "arc.vmc"
-          qemu-img convert -p -f raw -O vpc ${IMAGE_FILE} arc.vhd
-
-          echo "Create Arc ova"
-          convertova "${IMAGE_FILE}" "arc.ova"
-
-      # Zip image and generate checksum
-      - name: Pack Next Image
-        if: ${{ inputs.next == true }}
-        run: |
-          if [ -n "${{ env.ARC_VERSION }}" ]; then
-            zip -9 "arc-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.img.zip" arc.img
-            zip -9 "arc-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.vmdk-dyn.zip" arc-dyn.vmdk
-            zip -9 "arc-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.vmdk-flat.zip" arc.vmdk arc-flat.vmdk
-            zip -9 "arc-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.vhd.zip" arc.vhd arc.vmc
-            zip -9 "arc-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.ova.zip" arc.ova
-            (cd files && zip -r ../update-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.zip ./p1 ./p3)
-          fi
-
-      # Cleanup
-      - name: Cleanup
-        run: |
-          rm -rf "arc.img" "arc.vmdk" "arc-dyn.vmdk" "arc-flat.vmdk" "arc.vhd" "arc.ova" "arc.vmc"
-
-       # Build incremental
-      - name: Build Stable Image
-        if: ${{ inputs.stable == true }}
-        run: |
-          . scripts/func.sh
-
-          # Modify Source File
-          ARC_BUILD="`date +'%y%m%d'`"
-          ARC_VERSION="${{ inputs.version }}"
-          ARC_BRANCH="stable"
-          echo "${ARC_BUILD}" >files/p1/ARC-BUILD
-          echo "${ARC_VERSION}" >files/p1/ARC-VERSION
-          echo "${ARC_BRANCH}" >files/p1/ARC-BRANCH
-          echo "ARC_BUILD=${ARC_BUILD}" >> $GITHUB_ENV
-          echo "ARC_VERSION=${ARC_VERSION}" >> $GITHUB_ENV
-          echo "ARC_BRANCH=${ARC_BRANCH}" >> $GITHUB_ENV
-
-          echo "Create Arc Image"
-          IMAGE_FILE="arc.img"
-          gzip -dc "files/initrd/opt/arc/grub.img.gz" >"${IMAGE_FILE}"
-          fdisk -l "${IMAGE_FILE}"
-          
-          LOOPX=$(sudo losetup -f)
-          sudo losetup -P "${LOOPX}" "${IMAGE_FILE}"
-
-          echo "Mounting Image File"
-          mkdir -p "/tmp/p1"
-          mkdir -p "/tmp/p3"
-          sudo mount ${LOOPX}p1 "/tmp/p1"
-          sudo mount ${LOOPX}p3 "/tmp/p3"
-
-          [ ! -f "brs/bzImage-arc" ] || [ ! -f "brs/initrd-arc" ] && return 1
-          
-          echo "Repack initrd"
-          cp -f "brs/bzImage-arc" "files/p3/bzImage-arc"
-          #cp -f "brs/initrd-arc" "files/p3/initrd-arc"
-          repackInitrd "brs/initrd-arc" "files/initrd" "files/p3/initrd-arc"
-
-          echo "Copying files"
-          sudo cp -rf "files/p1/"* "/tmp/p1"
-          sudo cp -rf "files/p3/"* "/tmp/p3"
-          sudo sync
-
-          echo "Unmount image file"
-          sudo umount "/tmp/p1"
-          sudo umount "/tmp/p3"
-          rmdir "/tmp/p1"
-          rmdir "/tmp/p3"
-
-          sudo losetup --detach ${LOOPX}
+          echo "Resize Image"
+          mv -f "arc.img" "arc_1G.img"
+          resizeImg "arc_1G.img" "+3072M" "arc.img"
 
           echo "Image Converter"
           qemu-img convert -p -f raw -O vmdk ${IMAGE_FILE} arc-dyn.vmdk
@@ -253,8 +154,7 @@ jobs:
           convertova "${IMAGE_FILE}" "arc.ova"
 
       # Zip image and generate checksum
-      - name: Pack Stable Image
-        if: ${{ inputs.stable == true }}
+      - name: Pack Virtual Image
         run: |
           if [ -n "${{ env.ARC_VERSION }}" ]; then
             zip -9 "arc-${{ env.ARC_VERSION }}-${{ env.ARC_BRANCH }}.img.zip" arc.img
@@ -282,19 +182,8 @@ jobs:
               - Full Changelog is available in my Discord
               - Discord Account for Arc Patch needed
 
-            ### Versions:
-              - stable: Stable Image (Full Image, all dependencies are included, less hardware support)
-              - next: Next Image (Full Image, all dependencies are included, more hardware support, new features to test)
-
             ### Dependencies:
-              - Addons: ${{ env.ADDONTAG }}
-              - Modules: ${{ env.MODULETAG }}
-              - Configs: ${{ env.CONFIGTAG }}
-              - Patches: ${{ env.PATCHTAG }}
-              - Custom: ${{ env.CUSTOMTAG }}
-              - LKMs: ${{ env.LKMTAG }}
-              - Buildroot Stable: ${{ env.BRSTAG }}
-              - Buildroot Next: ${{ env.BRXTAG }}
+              - Buildroot Virtual: ${{ env.BRVTAG }}
 
             ### Release
               - ${{ env.BUILD_TIME }}
